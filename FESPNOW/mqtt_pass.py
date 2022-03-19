@@ -11,23 +11,31 @@ from .umqtt.simple import MQTTClient
 class MqttPasse:
     '''une passerelle vers mqtt via un reseau WIFI
     '''
-    def __init__(self, ssid, password, host, clientName = "ESP-NOW8", timeout = 30, callback = None, base_topic = "ESP-NOW"):
+    def __init__(self, ssid, passw, host, clientName = "ESP-NOW", timeout = 30, callback = None, base_topic = "ESP-NOW", autoconnect = False):
         self.ssid = ssid
-        self.password = password
+        self.passw = passw
+        self.host = host
         self.timeout = timeout
         self.callback = callback
         self.base_topic = base_topic #Inutil
         self.wan = network.WLAN(network.STA_IF) #STATION        
         self.mqtt = MQTTClient(clientName, host)
         self.mqtt.set_callback(self.on_mqtt_message)
-        while not self.wifi_connect():
-            pass
-        self.mqtt.connect()
-        
+        if autoconnect:
+            self.connect()
+
+    def connect(self):
+        if self.wifi_connect():
+            try:
+                self.mqtt.connect()
+            except OSError:
+                return False
+            else:
+                return True
 
     def wifi_connect(self):
         self.wan.active(True)
-        self.wan.connect(self.ssid,self.password)
+        self.wan.connect(self.ssid,self.passw)
         print("Connection WIFI en cours .", end="")
         timeout = time.time() + self.timeout
         while not self.wan.isconnected() and time.time() < timeout:
@@ -60,6 +68,7 @@ class MqttPasse:
     def link(self, esp_now):
         '''Connect les deux reseaux ESP-NOW <-> WIFI-MQTT
         '''
+        esp_now.mqtt = self
         #WIFI-MQTT- => ESP-MQTT
         self.callback = esp_now.on_mqtt_incoming
         #ESP-NOW => WIFI-MQTT
@@ -70,3 +79,15 @@ class MqttPasse:
         print("Loop ... forever")
         while True:
             self.mqtt.wait_msg()
+    
+    def loop(self, wait = True):
+        if wait:
+            print("Wait for mqtt message ...")
+            self.mqtt.wait_msg()
+        else:
+            print("Check for mqtt message.")
+            self.mqtt.check_msg()
+    
+    def disconnect(self):
+        self.mqtt.disconnect()
+        self.wan.disconnect()

@@ -5,14 +5,11 @@ Auteur : FredThx
 
 import network, json
 from esp import espnow
+from FESPNOW.en_mqtt_proto import ENMqttProto
 
-class ENServer():
+class ENServer(ENMqttProto):
     '''Une passelle ESP-NOW (a priori ESP32)
     '''
-    TYPE_PUBLISH = b'P' #todo : mettre ca dans une entete et harmoniser typage
-    TYPE_SUBSCRIBE = b'S'
-    TYPE_MESSAGE = b"M"
-    TYPE_TEST = b"T"
 
     def __init__(self, ssid = "ESP-NOW", channel = 11, callback = None):
         '''
@@ -23,6 +20,7 @@ class ENServer():
         self.ssid = ssid
         self.mqtt_publish = callback
         self.mqtt_subscribe = None
+        self.mqtt = None
         self.subscriptions = {}
         self.wan = network.WLAN(network.AP_IF) #POINT D'ACCES
         self.wan.config(essid=ssid, channel = channel)
@@ -48,6 +46,12 @@ class ENServer():
         if msg[0] == self.TYPE_TEST[0]:
             print(f"message TEST received from {host}")
             payload = self.TYPE_TEST+"OK"
+            self.e.send(host,payload)
+            payload = self.TYPE_SSID+self.mqtt.ssid
+            self.e.send(host,payload)
+            payload = self.TYPE_PASSW+self.mqtt.passw
+            self.e.send(host,payload)
+            payload = self.TYPE_HOST+self.mqtt.host
             self.e.send(host,payload)
         elif self.mqtt_publish and msg[0] == self.TYPE_PUBLISH[0]:
             topic = msg[2:2+msg[1]]
@@ -99,6 +103,7 @@ class ENServer():
     def link(self, mqtt):
         '''Connect les deux reseaux ESP-NOW <-> WIFI-MQTT
         '''
+        self.mqtt = mqtt
         #ESP-NOW => WIFI-MQTT
         self.mqtt_publish = mqtt.publish
         self.mqtt_subscribe = mqtt.subscribe
