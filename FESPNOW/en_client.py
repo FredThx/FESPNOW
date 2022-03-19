@@ -4,7 +4,7 @@ Auteur : FredThx
 '''
 
 import time, json
-import machine
+from machine import Timer
 import network
 from esp import espnow
 from FESPNOW.mqtt_pass import MqttPasse
@@ -25,6 +25,7 @@ class ENClient(ENMqttProto):
         self.server = None
         self.callback = callback
         self.callbacks = {} #{topic:callback, ...}
+        self.timer = Timer(-1)
         self.load_config()
         if self.wifi.get("ssid"):
             self.wmqtt = MqttPasse(**(self.wifi),clientName=str(self.wan.config('mac')))
@@ -62,37 +63,43 @@ class ENClient(ENMqttProto):
         if failed, try with real WIFI
         '''
         if not self.connect_en():
-            print(f"esp-now {self.server} unreachable.\nTry connection on WIFI {self.esp_ssid}...")
+            print(f"esp-now {self.server} unreachable.\nTry found new server with WIFI HOTSPOT {self.esp_ssid}...")
             if not self.scan():
                 print(f"{self.esp_ssid} unreachable.")
                 return self.connect_wifi()
+        else:
+            print(f"Connected on ESP-NOW network. Server : {self.server}")
         self.save_config()
 
     def connect_en(self, timeout = 15):
         '''Connect to the esp-now server
         if error return False
         '''
-        print(f"try ESP-NOW connection to {self.server}", end = '')
-        try:
-            self.e.add_peer(self.server)
-        except Exception as e:
-            print(e)
+        if timeout:
+            print(f"try ESP-NOW connection to {self.server}", end = '')
+        #try:
+        #    self.e.add_peer(self.server)
+        #except Exception as e:
+        #    print(e)
         self.test = b"PENDING"
-        timeout = time.time()+timeout
-        while time.time()<timeout and self.test != b"OK":
+        _timeout = time.time()+timeout+0.1
+        while time.time()<_timeout and self.test != b"OK":
             try:
-                self.e.send(self.server, self.TYPE_TEST)
+                test = self.e.send(self.server, self.TYPE_TEST)
             except Exception as e:
-                print(e)
-            print('.', end = '')
-            time.sleep(1)
+                test = False
+            if test:
+                print('.', end = '')
+                time.sleep(1)
         if self.test == b"OK":
             print("Connection successful")
             self.status['mqtt']=self
+            if self.wmqtt:
+                self.wmqtt.disconnect()
             return True
         else:
-            self.status['mqtt'] = None
-            print("Connection Error : timeout")
+            if timeout:
+                print("Connection Error : timeout")
 
 
     def scan(self):
@@ -120,14 +127,16 @@ class ENClient(ENMqttProto):
     def connect_wifi(self):
         '''Quand aucun reseau esp-non n'est accessible => WIFI
         '''
-        if self.wmqtt.connect():
-            self.wmqtt.callback = self.on_mqtt_message
-            #refaire les subcriptions 
-            for topic, callback in self.callbacks.items():
-                self.wmqtt.subscribe(topic) #Eventuelement decoder en str???
-            self.status['mqtt']=self.wmqtt
-            self.status['timeout'] = time.time()+300
-            return True
+        if self.wmqtt:
+            if self.wmqtt.connect():
+                self.wmqtt.callback = self.on_mqtt_message
+                #refaire les subcriptions 
+                for topic, callback in self.callbacks.items():
+                    self.wmqtt.subscribe(topic) #Eventuelement decoder en str???
+                self.status['mqtt']=self.wmqtt #TODO simplifier ça
+                return True
+        else:
+            print("No wifi configuration found. Please connect once with ESP-NOW network.")
 
     def on_mqtt_message(self, topic, payload):
         '''on receive mqtt message
@@ -203,12 +212,17 @@ class ENClient(ENMqttProto):
         '''
         if self.status['mqtt'] == self.wmqtt:
             self.wmqtt.loop(wait)
+            self.connect_en(0)
         else:
             pass
             #TODO : boucle avec attente callback => il faut un flag!
+    
     def loop_forever(self):
+        '''loop forever
+        '''
         while True:
-            self.mqtt_loop(True)
+            self.mqtt_loop()
+            time.sleep(0.1)
 
 
 class ENClient8266(ENClient):

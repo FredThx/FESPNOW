@@ -4,6 +4,7 @@ Auteur : FredThx
 '''
 
 import time
+from machine import Timer
 import network
 from .umqtt.simple import MQTTClient
 
@@ -11,7 +12,7 @@ from .umqtt.simple import MQTTClient
 class MqttPasse:
     '''une passerelle vers mqtt via un reseau WIFI
     '''
-    def __init__(self, ssid, passw, host, clientName = "ESP-NOW", timeout = 30, callback = None, base_topic = "ESP-NOW", autoconnect = False):
+    def __init__(self, ssid, passw, host, clientName = "ESP-NOW", timeout = 5, callback = None, base_topic = "ESP-NOW", autoconnect = False):
         self.ssid = ssid
         self.passw = passw
         self.host = host
@@ -21,6 +22,7 @@ class MqttPasse:
         self.wan = network.WLAN(network.STA_IF) #STATION        
         self.mqtt = MQTTClient(clientName, host)
         self.mqtt.set_callback(self.on_mqtt_message)
+        self.timer = Timer(-1)
         if autoconnect:
             self.connect()
 
@@ -31,6 +33,7 @@ class MqttPasse:
             except OSError:
                 return False
             else:
+                self.timer.init(mode = Timer.PERIODIC, period = 200, callback = lambda tim:self.mqtt.check_msg())
                 return True
 
     def wifi_connect(self):
@@ -75,19 +78,22 @@ class MqttPasse:
         esp_now.mqtt_publish = self.publish
         esp_now.mqtt_subscribe = self.subscribe
 
-    def loop_forever(self):
+    def loop_forever(self):#OBSOLETE
         print("Loop ... forever")
         while True:
             self.mqtt.wait_msg()
     
-    def loop(self, wait = True):
+    def loop(self, wait = True):#OBSOLETE
         if wait:
             print("Wait for mqtt message ...")
             self.mqtt.wait_msg()
         else:
-            print("Check for mqtt message.")
             self.mqtt.check_msg()
     
-    def disconnect(self):
-        self.mqtt.disconnect()
+    def disconnect(self):#OBSOLETE
+        try:
+            self.mqtt.disconnect()
+            self.timer.deinit()
+        except:
+            pass
         self.wan.disconnect()

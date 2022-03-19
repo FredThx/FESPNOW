@@ -81,4 +81,4 @@ def run(payload):
         n[len(n)-j-1]=(0,0,0)
     n.write()
 
-mqtt.loop_forever()
+#mqtt.loop_forever()
