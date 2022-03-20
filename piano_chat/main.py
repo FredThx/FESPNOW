@@ -16,6 +16,7 @@ class PianoChat(FESPIot):
             Pin(13,Pin.IN),
             Pin(12,Pin.IN)
             ]
+        self.touches_values = [p.value() for p in self.touches]
         for i, pin in enumerate(self.touches):
             pin.irq(trigger=3,handler = self.handler_touch)
             self.write_touch(i,1)
@@ -43,7 +44,8 @@ class PianoChat(FESPIot):
 
     def handler_touch(self, pin):
         for i, _pin in enumerate(self.touches):
-            if _pin == pin:
+            if _pin == pin and pin.value != self.touches_values[i]:
+                self.touches_values[i] = pin.value()
                 self.mqtt.publish(f"./TOUCH{i+1}",str(pin.value()))
                 self.write_touch(i,50)
                 time.sleep(1)
