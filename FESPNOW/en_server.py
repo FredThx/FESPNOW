@@ -42,7 +42,7 @@ class ENServer(ENMqttProto):
         str_host = {':'.join([str(x) for x in list(host)])}
         print(f"Reception de {type(msg)}({msg}) from {str_host}")
         self.add_peer(host)
-        print(f"msg[0]='{msg[0]}', msg[0]=='P' = {msg[0]=='P'}")
+        #print(f"msg[0]='{msg[0]}', msg[0]=='P' = {msg[0]=='P'}")
         if msg[0] == self.TYPE_TEST[0]:
             print(f"message TEST received from {host}")
             payload = self.TYPE_TEST+"OK"
@@ -121,7 +121,6 @@ class ENServer(ENMqttProto):
         '''Save the config in a sjon file
         '''
         if not self._load_config:
-            print("Save config")
             data = {}
             data['peers'] = self.get_peers()
             data['subscriptions'] = self.subscriptions

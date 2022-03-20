@@ -1,5 +1,6 @@
 
 
+
 class ENMqttProto:
     '''A communication protocol ESP-NOW <-> MQTT
     '''

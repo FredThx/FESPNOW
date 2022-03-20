@@ -3,6 +3,7 @@ Projet  : FESPNOW
 Auteur : FredThx
 '''
 
+
 import time
 from machine import Timer
 import network
@@ -12,13 +13,12 @@ from .umqtt.simple import MQTTClient
 class MqttPasse:
     '''une passerelle vers mqtt via un reseau WIFI
     '''
-    def __init__(self, ssid, passw, host, clientName = "ESP-NOW", timeout = 5, callback = None, base_topic = "ESP-NOW", autoconnect = False):
+    def __init__(self, ssid, passw, host, clientName = "ESP-NOW", timeout = 15, callback = None, autoconnect = False):
         self.ssid = ssid
         self.passw = passw
         self.host = host
         self.timeout = timeout
         self.callback = callback
-        self.base_topic = base_topic #Inutil
         self.wan = network.WLAN(network.STA_IF) #STATION        
         self.mqtt = MQTTClient(clientName, host)
         self.mqtt.set_callback(self.on_mqtt_message)
@@ -56,6 +56,7 @@ class MqttPasse:
         print(f"Recept MQTT : {topic} : {msg}")
         if self.callback:
             self.callback(topic, msg)
+
 
     def publish(self, topic, msg):
         '''Callback for ENServer
@@ -97,3 +98,4 @@ class MqttPasse:
         except:
             pass
         self.wan.disconnect()
+        self.wan.active(True)
