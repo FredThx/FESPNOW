@@ -13,14 +13,16 @@ class WDT:
         self.timer = Timer(-1)
 
     def enable(self):
-        """Enablme the watchdog
+        """Enable the watchdog
         """
-        self.timer.init(mode = Timer.PERIODIC, period = self.timeout*1000, callback = self.reset)
+        self.timer.init(mode = Timer.PERIODIC, period = self.timeout*1000, callback = lambda topic, payload : self.reset())
 
     def reset(self, tim):
+        print("Watchdog timeout : machine reset!")
         machine.reset()
     
     def feed(self):
+        print("Watchodg feeded.")
         self.timer.deinit()
         self.enable()
 

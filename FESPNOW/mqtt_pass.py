@@ -1,7 +1,6 @@
 '''
 Projet  : FESPNOW
 Auteur : FredThx
-Version : utilisée pour Olfa
 '''
 
 
@@ -14,7 +13,7 @@ from .umqtt.simple import MQTTClient
 class MqttPasse:
     '''une passerelle vers mqtt via un reseau WIFI
     '''
-    def __init__(self, ssid, passw, host, clientName = "ESP-NOW", timeout = 15, callback = None, autoconnect = False):
+    def __init__(self, ssid, passw, host, clientName = "ESP-NOW", timeout = 60, callback = None, autoconnect = False):
         self.ssid = ssid
         self.passw = passw
         self.host = host
@@ -57,6 +56,8 @@ class MqttPasse:
         print(f"Recept MQTT : {topic} : {msg}")
         if self.callback:
             self.callback(topic, msg)
+        else:
+            print("but no callback function on %s"%self)
 
 
     def publish(self, topic, msg):

@@ -13,31 +13,49 @@ class ENClient(ENMqttProto):
     '''Un client de ENServer (passerelle ESP-NOW)
     '''
 
-    def __init__(self, esp_ssid = "ESP-NOW", timeout = 15, callback = None, timer_duration = 30, mqtt_base_topic = "ESP-NOW"):
+    def __init__(self, esp_ssid = "ESP-NOW", timeout = 15, callback = None, timer_duration = 30, mqtt_base_topic = "ESP-NOW", wifi = None):
         '''
         esp_ssid        :   SSID pour apareiller ESP-NOW (obtenir la mac du server)
         timeout         :   pour première connection ESP-NOW
         callback        :   callback for all messages
         timer_duration  :   duration (seconds) for reconnection ESP-NOW (quand en mode WIFI)
+        mqtt_base_topic :   add before topics that start with './'
+        wifi            :   a dict {'ssid' : ..., 'passw' : ..., 'host': '...'} if not None, force wifi connection
         '''
         self.discret = False
         self.esp_ssid = esp_ssid
         self.timeout = timeout
+        self.timer_duration = timer_duration
         self.wifi = {}
-        self.mqtt_base_topic = mqtt_base_topic
+        if mqtt_base_topic and mqtt_base_topic[-1] == '/':
+            self.mqtt_base_topic = mqtt_base_topic[:-1]
+        else:
+            self.mqtt_base_topic = mqtt_base_topic
         self.wmqtt = None
+        #Activate Station mode
         self.wan = network.WLAN(network.STA_IF)
         self.wan.active(True)
+        #Desactivate AP
+        ap = network.WLAN(network.AP_IF)
+        ap.active(False)
+        #
         self.init_esp_now()
         self.esp_server = None
         self.callback = callback
         self.callbacks = {} #{topic:callback, ...}
-        self.load_config()
+        if wifi:
+            print("\nWifi mode : %s"%(wifi))
+            self.wifi = wifi
+        else:
+            print("Esp-Now mode")
+            self.load_config()
         if self.wifi.get("ssid"):
             self.wmqtt = MqttPasse(**(self.wifi),clientName=str(self.wan.config('mac')))
-        self.mqtt = None # Soit self.wmqtt (en wifi), soit self(en mode esp-now)
-        self.timer_duration = timer_duration
-        self.connect()
+        if wifi:
+            self.connect_wifi()
+        else:
+            self.mqtt = None # Soit self.wmqtt (en wifi), soit self(en mode esp-now)
+            self.connect()
 
     def init_esp_now(self):
         self.e = espnow.ESPNow()
@@ -59,7 +77,7 @@ class ENClient(ENMqttProto):
                 else:
                     setattr(self, prop, value)
         except Exception as e:
-            self.logging(e)
+            self.logging(f"Erreur on loading config.json : {e}")
         else:
             self.logging(f"load config ok. server : {self.esp_server}")
     
@@ -136,6 +154,7 @@ class ENClient(ENMqttProto):
     def connect_wifi(self):
         '''Quand aucun reseau esp-non n'est accessible => WIFI
         '''
+        self.logging("Try to use wifi connection.")
         if self.wmqtt:
             if self.wmqtt.connect():
                 self.wmqtt.callback = self.on_mqtt_message
@@ -152,6 +171,7 @@ class ENClient(ENMqttProto):
         (dasn le cas où l'on change de mode)
         '''
         for topic, callback in self.callbacks.items():
+            self.logging(f"resubscribe {topic}")
             self.mqtt.subscribe(topic) #pas nécessaire de repasser la callback qui est déjà enregistrée
 
     def on_mqtt_message(self, topic, payload):

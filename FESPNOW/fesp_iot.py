@@ -6,18 +6,19 @@ from machine import Timer
 class FESPIot:
     """Un object connecté
     """
-    def __init__(self, mqtt_base_topic, watchdog = 60):
+    def __init__(self, mqtt_base_topic, watchdog = None, wifi = None):
         '''
         mqtt_base_topic  :
         watchdog         :   en seconds
+        wifi             :   a dict {'ssid' : ..., 'passw' : ..., 'host'} if not None, force wifi connection
         '''
         self.mqtt_base_topic = mqtt_base_topic
         if self.mqtt_base_topic[-1] == '/':
             self.mqtt_base_topic = self.mqtt_base_topic[:-1]
         if os.uname().sysname == 'esp8266':
-            self.mqtt =ENClient8266(mqtt_base_topic = mqtt_base_topic)
+            self.mqtt =ENClient8266(mqtt_base_topic = mqtt_base_topic, wifi = wifi)
         else:
-            self.mqtt =ENClient(mqtt_base_topic = mqtt_base_topic)
+            self.mqtt =ENClient(mqtt_base_topic = mqtt_base_topic, wifi = wifi)
         if watchdog:
             assert type(watchdog)==int,"Watchdog must be a integer"
             self.wdt = WDT(watchdog)
