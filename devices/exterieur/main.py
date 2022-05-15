@@ -30,7 +30,7 @@ class PianoChat(FESPIot):
             self.leds[pos+i//3]=(payload[i], payload[i+1],payload[i+2])
         self.leds.write()
 
-    def write_touch(self,t,v):
+    def write_touch(self,t:int,v:int):
         '''t : n° de la zone : 0-1-2
             v : leur de luminosité (1 - 50)
         '''
@@ -66,9 +66,18 @@ class PianoChat(FESPIot):
                     color[ic]=payload[j*3+ic]
                 self.leds[i+j+1]=color
             self.leds.write()
-            time.sleep(0.01)
+            time.sleep(0.02)
         for j in range(l):
             self.leds[len(self.leds)-j-1]=(0,0,0)
         self.leds.write()
 
 piano_chat = PianoChat()
+
+while False:
+    i = random.getrandbits(2)
+    if i <3:
+        piano_chat.write_touch(i,30)
+        time.sleep(0.2)
+        piano_chat.write_touch(i,1)
+        time.sleep(1)
+

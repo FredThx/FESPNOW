@@ -6,7 +6,7 @@ from machine import Timer
 class FESPIot:
     """Un object connecté
     """
-    def __init__(self, mqtt_base_topic, watchdog = None):
+    def __init__(self, mqtt_base_topic, watchdog = 60):
         '''
         mqtt_base_topic  :
         watchdog         :   en seconds

@@ -1,6 +1,7 @@
 '''
 Projet  : FESPNOW
 Auteur : FredThx
+Version : utilisée pour Olfa
 '''
 
 
