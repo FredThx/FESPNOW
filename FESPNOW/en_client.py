@@ -238,7 +238,8 @@ class ENClient(ENMqttProto):
                 self.wmqtt.publish(topic, payload)
 
     def subscribe(self, topic, callback = None):
-        '''Subscibe to a mqtt topic via esp-now
+        '''Subscibe to a mqtt topic via esp-
+        callback : function(topic, payload)
         '''
         topic = self.get_topic(topic)
         if self.mqtt == self: #Mode ESP-NOW
