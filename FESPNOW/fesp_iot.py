@@ -74,7 +74,7 @@ class FESPIot:
         if message:=self.mqtt_out_topics.get(topic):
             if callable(message):
                 message = message()#des arguments???
-            self.mqtt.publish(topic, message)#TODO : qos, callbac, ...
+            self.mqtt.publish(topic, str(message))#TODO : qos, callbac, ...
 
     def add_in_topic(self, topic, payload = None, callback = None):
         '''Add a new input
