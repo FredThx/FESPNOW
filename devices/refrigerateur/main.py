@@ -13,7 +13,7 @@ config = JsonConfig()
 consigne = config.read('consigne') or 5.0
 
 #Rotary encoder
-rot = RotaryEncoder(Pin(21), Pin(20), Pin(22), init_value = consigne, min_value = 0, max_value = 15, step = 0.5) # D5, D6, D7
+rot = RotaryEncoder(Pin(21), Pin(20), Pin(22), init_value = consigne, min_value = -5, max_value = 5, step = 0.1) # D5, D6, D7
 
 #Display
 i2c = I2C(1, sda = Pin(26), scl=Pin(27)) 
